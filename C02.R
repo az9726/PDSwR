@@ -108,7 +108,9 @@ for(i in 1:(dim(d))[2]) {
         if(class(d[,i])=='character') {
                 d[,i] <- as.factor(as.character(mapping[d[,i]]))
         }
-}  #到这个地方才知道列表--list的真正作用
+} 
+
+#到这个地方才知道列表--list的真正作用
 
 summary(d)
 summary(d$Status.of.existing.checking.account)
