@@ -125,3 +125,61 @@ as.character(map1[d$Good.Loan])
 
 #2.1 end
 
+setwd("D:/Documents/GIT/zmPDSwR/PUMS")
+load('phsample.RData')
+head(dhus)
+dim(dhus)
+dim(dpus)
+
+
+dpus$stdworker <- with(dpus,(PINCP>1000)&(ESR==1)&
+                               (PINCP<=250000)&(PERNP>1000)&(PERNP<=250000)&
+                               (WKHP>=40)&(AGEP>=20)&(AGEP<=50)&
+                               (PWGTP1>0)&(COW %in% (1:7))&(SCHL %in% (1:24)))
+
+dim(dpus)
+
+dpus$stdworker
+
+summary(dpus$stdworker)
+
+dim(dpus[which(dpus$stdworker),])
+
+with(dpus,(PINCP>1000)&(ESR==1)&
+             (PINCP<=250000)&(PERNP>1000)&(PERNP<=250000)&
+             (WKHP>=40)&(AGEP>=20)&(AGEP<=50)&
+             (PWGTP1>0)&(COW %in% (1:7))&(SCHL %in% (1:24)))
+dim(psub)
+ls()
+
+
+psub<-subset(dpus,(PINCP>1000)&(ESR==1)&
+                     (PINCP<=250000)&(PERNP>1000)&(PERNP<=250000)&
+                     (WKHP>=40)&(AGEP>=20)&(AGEP<=50)&
+                     (PWGTP1>0)&(COW %in% (1:7))&(SCHL %in% (1:24)))
+dim(psub)
+
+psub1<-subset(dpus,stdworker)
+
+psub==psub1
+Compare(psub,psub1)
+
+
+###################################
+
+dpus$stdworker <- with(dpus,(PINCP>1000)&(ESR==1)&
+                               (PINCP<=250000)&(PERNP>1000)&(PERNP<=250000)&
+                               (WKHP>=40)&(AGEP>=20)&(AGEP<=50)&
+                               (PWGTP1>0)&(COW %in% (1:7))&(SCHL %in% (1:24)))
+dpus$SEX <- as.factor(ifelse(dpus$SEX==1,'M','F'))
+dpus$SEX <- relevel(dpus$SEX,'M')
+cowmap <- c("Employee of a private for-profit",
+            "Private not-for-profit employee",
+            "Local government employee",
+            "State government employee",
+            "Federal government employee",
+            "Self-employed not incorporated",
+            "Self-employed incorporated")
+dpus$COW <- as.factor(cowmap[dpus$COW])
+cowmap[dpus$COW]
+dpus$COW

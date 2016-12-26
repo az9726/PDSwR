@@ -1,0 +1,320 @@
+Table of Contents
+1 正则表达式简介
+2 字符数统计和字符翻译
+2.1 nchar和length
+2.2 tolower，toupper和chartr
+3 字符串连接
+3.1 paste函数
+4 字符串拆分
+4.1 strsplit函数
+5 字符串查询：
+5.1 grep和grepl函数：
+5.2 regexpr、gregexpr和regexec
+6 字符串替换
+6.1 sub和gsub函数
+7 字符串提取
+7.1 substr和substring函数
+8 其他：
+8.1 strtrim函数
+8.2 strwrap函数
+8.3 match和charmatch
+1 正则表达式简介
+正则表达式不是R的专属内容，这里只做简单介绍，更详细的内容请查阅其他文章。
+
+正则表达式是用于描述/匹配一个文本集合的表达式：
+
+所有英文字母、数字和很多可显示的字符本身就是正则表达式，用于匹配它们自己。比如 “a” 就是匹配字母 “a” 的正则表达式
+一些特殊的字符在正则表达式中不在用来描述它自身，它们在正则表达式中已经被“转义”，这些字符称为“元字符”。perl类型的正则表达式中被转义的字符有：. \ | ( ) [ ] { } ^ $ * + ?。被转义的字符已经有特殊的意义，如点号 . 表示任意字符；方括号表示选择方括号中的任意一个（如[a-z] 表示任意一个小写字符）；^ 放在表达式开始出表示匹配文本开始位置，放在方括号内开始处表示非方括号内的任一字符；大括号表示前面的字符或表达式的重复次数；| 表示可选项，即 | 前后的表达式任选一个。
+如果要在正则表达式中表示元字符本身，比如我就要在文本中查找问号“?”， 那么就要使用引用符号（或称换码符号），一般是反斜杠 “\”。需要注意的是，在R语言中得用两个反斜杠即 “\\”，如要匹配括号就要写成 “\\(\\)”
+不同语言或应用程序（事实上很多规则都通用）定义了一些特殊的元字符用于表示某类字符，如 \d 表示数字0-9， \D 表示非数字，\s 表示空白字符（包括空格、制表符、换行符等），\S 表示非空白字符，\w 表示字（字母和数字），\W 表示非字，\< 和 \> 分别表示以空白字符开始和结束的文本。
+正则表达式符号运算顺序：圆括号括起来的表达式最优先，然后是表示重复次数的操作（即：* + {} ），接下来是连接运算（其实就是几个字符放在一起，如abc），最后是表示可选项的运算（|）。所以 “foot|bar” 可以匹配“foot”或者“bar”，但是“foot|ba{2}r”匹配的是“foot”或者“baar”。
+2 字符数统计和字符翻译
+2.1 nchar和length
+nchar这个函数简单，统计向量中每个元素的字符个数，注意这个函数和length函数的差别：nchar是向量元素的字符个数，而length是向量长度（向量元素的个数）。其他没什么需要说的。
+
+x <- c("Hellow", "World", "!")
+nchar(x)
+## [1] 6 5 1
+length("")
+## [1] 1
+nchar("")
+## [1] 0
+2.2 tolower，toupper和chartr
+这三个函数用法也很简单：
+
+DNA <- "AtGCtttACC"
+tolower(DNA)
+## [1] "atgctttacc"
+toupper(DNA)
+## [1] "ATGCTTTACC"
+chartr("Tt", "Uu", DNA)
+## [1] "AuGCuuuACC"
+chartr("Tt", "UU", DNA)
+## [1] "AUGCUUUACC"
+3 字符串连接
+3.1 paste函数
+paste应该是R中最常用字符串函数了，也是R字符串处理函数里面非常纯的不使用正则表达式的函数（因为用不着）。它相当于其他语言的strjoin，但是功能更强大。它把向量连成字串向量，其他类型的数据会转成向量，但不一定是你要的结果：
+
+paste("CK", 1:6, sep = "")
+## [1] "CK1" "CK2" "CK3" "CK4" "CK5" "CK6"
+x <- list(a = "aaa", b = "bbb", c = "ccc")
+y <- list(d = 1, e = 2)
+paste(x, y, sep = "-")  #较短的向量被循环使用
+## [1] "aaa-1" "bbb-2" "ccc-1"
+z <- list(x, y)
+paste("T", z, sep = ":")
+## [1] "T:list(a = \"aaa\", b = \"bbb\", c = \"ccc\")"
+## [2] "T:list(d = 1, e = 2)"
+短向量重复使用，列表数据只有一级列表能有好的表现，能不能用看自己需要。会得到什么样的结果是可以预知的，用as.character函数看吧，这又是一个字符串处理函数：
+
+as.character(x)
+## [1] "aaa" "bbb" "ccc"
+as.character(z)
+## [1] "list(a = \"aaa\", b = \"bbb\", c = \"ccc\")"
+## [2] "list(d = 1, e = 2)"
+paste函数还有一个用法，设置collapse参数，连成一个字符串：
+
+paste(x, y, sep = "-", collapse = "; ")
+## [1] "aaa-1; bbb-2; ccc-1"
+paste(x, collapse = "; ")
+## [1] "aaa; bbb; ccc"
+4 字符串拆分
+4.1 strsplit函数
+strsplit函数使用正则表达式，使用格式为:
+
+strsplit(x, split, fixed = FALSE, perl = FALSE, useBytes = FALSE)
+参数x为字串向量，每个元素都将单独进行拆分。
+参数split为拆分位置的字串向量，默认为正则表达式匹配（fixed=FALSE）。如果你没接触过正则表达式，设置fixed=TRUE，表示使用普通文本匹配或正则表达式的精确匹配。普通文本的运算速度快。
+perl=TRUE/FALSE的设置和perl语言版本有关，如果正则表达式很长，正确设置表达式并且使用perl=TRUE可以提高运算速度。
+参数useBytes设置是否逐个字节进行匹配，默认为FALSE，即按字符而不是字节进行匹配。
+下面的例子把一句话按空格拆分为单词：
+
+text <- "Hello Adam!\nHello Ava!"
+strsplit(text, " ")
+## [[1]]
+## [1] "Hello"        "Adam!\nHello" "Ava!"
+R语言的字符串事实上也是正则表达式，上面文本中的\n在图形输出中是被解释为换行符的。
+
+strsplit(text, "\\s")
+## [[1]]
+## [1] "Hello" "Adam!" "Hello" "Ava!"
+strsplit得到的结果是列表，后面要怎么处理就得看情况而定了：
+
+class(strsplit(text, "\\s"))
+## [1] "list"
+有一种情况很特殊：如果split参数的字符长度为0，得到的结果就是一个个的字符：
+
+strsplit(text, "")
+## [[1]]
+##  [1] "H"  "e"  "l"  "l"  "o"  " "  "A"  "d"  "a"  "m"  "!"  "\n" "H"  "e" 
+## [15] "l"  "l"  "o"  " "  "A"  "v"  "a"  "!"
+从这里也可以看到R把 \n 是当成一个字符来处理的。
+
+5 字符串查询：
+5.1 grep和grepl函数：
+这两个函数返回向量水平的匹配结果，不涉及匹配字符串的详细位置信息。
+
+grep(pattern, x, ignore.case = FALSE, perl = FALSE, value = FALSE, fixed = FALSE, 
+    useBytes = FALSE, invert = FALSE)
+grepl(pattern, x, ignore.case = FALSE, perl = FALSE, fixed = FALSE, useBytes = FALSE)
+虽然参数看起差不多，但是返回的结果不一样。下来例子列出C:\windows目录下的所有文件，然后用grep和grepl查找exe文件：
+
+files <- list.files("c:/windows")
+grep("\\.exe$", files)
+##  [1]   8  28  30  35  36  58  69  99 100 102 111 112 115 117
+grepl("\\.exe$", files)
+##   [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE
+##  [12] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+##  [23] FALSE FALSE FALSE FALSE FALSE  TRUE FALSE  TRUE FALSE FALSE FALSE
+##  [34] FALSE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+##  [45] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+##  [56] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+##  [67] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+##  [78] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+##  [89] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE
+## [100]  TRUE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+## [111]  TRUE  TRUE FALSE FALSE  TRUE FALSE  TRUE FALSE
+grep仅返回匹配项的下标，而grepl返回所有的查询结果，并用逻辑向量表示有没有找到匹配。两者的结果用于提取数据子集的结果都一样：
+
+files[grep("\\.exe$", files)]
+##  [1] "bfsvc.exe"      "explorer.exe"   "fveupdate.exe"  "HelpPane.exe"  
+##  [5] "hh.exe"         "notepad.exe"    "regedit.exe"    "twunk_16.exe"  
+##  [9] "twunk_32.exe"   "uninst.exe"     "winhelp.exe"    "winhlp32.exe"  
+## [13] "write.exe"      "xinstaller.exe"
+files[grepl("\\.exe$", files)]
+##  [1] "bfsvc.exe"      "explorer.exe"   "fveupdate.exe"  "HelpPane.exe"  
+##  [5] "hh.exe"         "notepad.exe"    "regedit.exe"    "twunk_16.exe"  
+##  [9] "twunk_32.exe"   "uninst.exe"     "winhelp.exe"    "winhlp32.exe"  
+## [13] "write.exe"      "xinstaller.exe"
+5.2 regexpr、gregexpr和regexec
+这三个函数返回的结果包含了匹配的具体位置和字符串长度信息，可以用于字符串的提取操作。
+
+text <- c("Hellow, Adam!", "Hi, Adam!", "How are you, Adam.")
+regexpr("Adam", text)
+## [1]  9  5 14
+## attr(,"match.length")
+## [1] 4 4 4
+## attr(,"useBytes")
+## [1] TRUE
+gregexpr("Adam", text)
+## [[1]]
+## [1] 9
+## attr(,"match.length")
+## [1] 4
+## attr(,"useBytes")
+## [1] TRUE
+## 
+## [[2]]
+## [1] 5
+## attr(,"match.length")
+## [1] 4
+## attr(,"useBytes")
+## [1] TRUE
+## 
+## [[3]]
+## [1] 14
+## attr(,"match.length")
+## [1] 4
+## attr(,"useBytes")
+## [1] TRUE
+regexec("Adam", text)
+## [[1]]
+## [1] 9
+## attr(,"match.length")
+## [1] 4
+## 
+## [[2]]
+## [1] 5
+## attr(,"match.length")
+## [1] 4
+## 
+## [[3]]
+## [1] 14
+## attr(,"match.length")
+## [1] 4
+6 字符串替换
+6.1 sub和gsub函数
+虽然sub和gsub是用于字符串替换的函数，但严格地说R语言没有字符串替换的函数，因为R语言不管什么操作对参数都是传值不传址。
+
+text
+## [1] "Hellow, Adam!"      "Hi, Adam!"          "How are you, Adam."
+sub(pattern = "Adam", replacement = "world", text)
+## [1] "Hellow, world!"      "Hi, world!"          "How are you, world."
+text
+## [1] "Hellow, Adam!"      "Hi, Adam!"          "How are you, Adam."
+可以看到：虽然说是“替换”，但原字符串并没有改变，要改变原变量我们只能通过再赋值的方式。 sub和gsub的区别是前者只做一次替换（不管有几次匹配），而gsub把满足条件的匹配都做替换：
+
+sub(pattern = "Adam|Ava", replacement = "world", text)
+## [1] "Hellow, world!"      "Hi, world!"          "How are you, world."
+gsub(pattern = "Adam|Ava", replacement = "world", text)
+## [1] "Hellow, world!"      "Hi, world!"          "How are you, world."
+sub和gsub函数可以使用提取表达式（转义字符+数字）让部分变成全部：
+
+sub(pattern = ".*(Adam).*", replacement = "\\1", text)
+## [1] "Adam" "Adam" "Adam"
+7 字符串提取
+7.1 substr和substring函数
+substr和substring函数通过位置进行字符串拆分或提取，它们本身并不使用正则表达式，但是结合正则表达式函数regexpr、gregexpr或regexec使用可以非常方便地从大量文本中提取所需信息。两者的参数设置基本相同：
+
+substr(x, start, stop)
+substring(text, first, last = 1000000L)
+x均为要拆分的字串向量
+start/first 为截取的起始位置向量
+stop/last 为截取字串的终止位置向量
+但它们的返回值的长度（个数）有差 别：
+
+substr返回的字串个数等于第一个参数的长度
+而substring返回字串个数等于三个参数中最长向量长度，短向量循环使用。
+先看第1参数（要 拆分的字符向量）长度为1例子：
+
+x <- "123456789"
+substr(x, c(2, 4), c(4, 5, 8))
+## [1] "234"
+substring(x, c(2, 4), c(4, 5, 8))
+## [1] "234"     "45"      "2345678"
+因为x的向量长度为1，所以substr获得的结果只有1个字串，即第2和第3个参数向量只用了第一个组合：起始位置2，终止位置4。 而substring的语句三个参数中最长的向量为c(4,5,8)，执行时按短向量循环使用的规则第一个参数事实上就是c(x,x,x)，第二个参数就成了c(2,4,2)，最终截取的字串起始位置组合为：2-4, 4-5和2-8。
+
+请按照这样的处理规则解释下面语句运行的结果：
+
+x <- c("123456789", "abcdefghijklmnopq")
+substr(x, c(2, 4), c(4, 5, 8))
+## [1] "234" "de"
+substring(x, c(2, 4), c(4, 5, 8))
+## [1] "234"     "de"      "2345678"
+用substring函数可以很方便地把DNA/RNA序列进行三联拆分（用于蛋白质翻译）：
+
+bases <- c("A", "T", "G", "C")
+DNA <- paste(sample(bases, 12, replace = T), collapse = "")
+DNA
+## [1] "GCAGCGCATATG"
+substring(DNA, seq(1, 10, by = 3), seq(3, 12, by = 3))
+## [1] "GCA" "GCG" "CAT" "ATG"
+用regexpr、gregexpr或regexec函数获得位置信息后再进行字符串提取的操作可以自己试试看。
+
+8 其他：
+8.1 strtrim函数
+用于将字符串修剪到特定的显示宽度，其用法为strtrim(x, width)，返回字符串向量的长度等于x的长度。因为是“修剪”，所以只能去掉多余的字符不能增加其他额外的字符：如果字符串本身的长度小于width，得到的是原字符串，别指望它会用空格或其他什么字符补齐：
+
+strtrim(c("abcdef", "abcdef", "abcdef"), c(1, 5, 10))
+## [1] "a"      "abcde"  "abcdef"
+strtrim(c(1, 123, 1234567), 4)
+## [1] "1"    "123"  "1234"
+8.2 strwrap函数
+该函数把一个字符串当成一个段落的文字（不管字符串中是否有换行符），按照段落的格式（缩进和长度）和断字方式进行分行，每一行是结果中的一个字符串。例如：
+
+str1 <- "Each character string in the input is first split into paragraphs\n(or lines containing whitespace only).  The paragraphs are then\nformatted by breaking lines at word boundaries.  The target\ncolumns for wrapping lines and the indentation of the first and\nall subsequent lines of a paragraph can be controlled\nindependently."
+str2 <- rep(str1, 2)
+strwrap(str2, width = 80, indent = 2)
+##  [1] "  Each character string in the input is first split into paragraphs (or lines"
+##  [2] "containing whitespace only).  The paragraphs are then formatted by breaking"  
+##  [3] "lines at word boundaries.  The target columns for wrapping lines and the"     
+##  [4] "indentation of the first and all subsequent lines of a paragraph can be"      
+##  [5] "controlled independently."                                                    
+##  [6] "  Each character string in the input is first split into paragraphs (or lines"
+##  [7] "containing whitespace only).  The paragraphs are then formatted by breaking"  
+##  [8] "lines at word boundaries.  The target columns for wrapping lines and the"     
+##  [9] "indentation of the first and all subsequent lines of a paragraph can be"      
+## [10] "controlled independently."
+simplify参数用于指定结果的返回样式，默认为TRUE，即结果中所有的字符串都按顺序放在一个字符串向量中（如上）；如果为FALSE，那么结果将是列表。另外一个参数exdent用于指定除第一行以外的行缩进：
+
+strwrap(str1, width = 80, indent = 0, exdent = 2)
+## [1] "Each character string in the input is first split into paragraphs (or lines"  
+## [2] "  containing whitespace only).  The paragraphs are then formatted by breaking"
+## [3] "  lines at word boundaries.  The target columns for wrapping lines and the"   
+## [4] "  indentation of the first and all subsequent lines of a paragraph can be"    
+## [5] "  controlled independently."
+8.3 match和charmatch
+match("xx", c("abc", "xx", "xxx", "xx"))
+## [1] 2
+match(2, c(3, 1, 2, 4))
+## [1] 3
+charmatch("xx", "xx")
+## [1] 1
+charmatch("xx", "xxa")
+## [1] 1
+charmatch("xx", "axx")
+## [1] NA
+match按向量进行运算，返回第一次匹配的元素的位置（如果有），非字符向量也可用。charmatch函数真坑爹。其他不看了，其实有正则表达式就足够。
+
+###########实际应用
+ \d 表示数字0-9， \D 表示非数字，
+ \s 表示空白字符（包括空格、制表符、换行符等），\S 表示非空白字符，
+ \w 表示字（字母和数字），\W 表示非字，
+ \< 和 \> 分别表示以空白字符开始和结束的文本。
+ 
+ grep("\\D",text1)
+ grepl("\\D",text1)
+ ####\d 与 \D 不是互补
+ 
+ > text1
+ [1] "02427890209" "024lnyouth"  "02427889696" "02487883838"
+ [5] "02407104599" "02487899677" "024chuanbo"  "02401050831"
+ [9] "02487803339" "02487893338" "02406241711" "02407104599"
+[13] "02487862393" "02487882547" "02487882737" "02423925969"
+[17] "02487882448" "02487883516" "02427890207" "02487882311"
+> grep("\\D",text1)
+[1] 2 7
+> grepl("\\D",text1)
+ [1] FALSE  TRUE FALSE FALSE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE
+[12] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+> 
