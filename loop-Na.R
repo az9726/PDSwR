@@ -24,6 +24,7 @@ for (i in 1:dim(ww)[1]) {
                    # 通过length()==0就可以判断是否没取到值
                 g[i,j]<- NaN #关于空值也弄了很长时间，空值的定义还要继续明确
                         else g[i,j]<-a[which(a$X.date==dn[i]&a$stkcd==sn[j]),3]
+                        #捏住日期不变，在横行填写不同stkcd的数值
         }
 }
 
