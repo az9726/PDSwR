@@ -46,6 +46,20 @@ summary(custdata)
 #                )
 # [1] 56
 # > 
+summary(
+        custdata[is.na(custdata$recent.move), #recent.move为空的行
+        c("num.vehicles","housing.type")] #选择这两列num.vehicles/housing.type
+        )
+
+# num.vehicles                       housing.type
+# Min.   : NA   Homeowner free and clear    : 0   
+# 1st Qu.: NA   Homeowner with mortgage/loan: 0   
+# Median : NA   Occupied with no rent       : 0   
+# Mean   :NaN   Rented                      : 0   
+# 3rd Qu.: NA   NA's                        :56   
+# Max.   : NA                                     
+# NA's   :56    
+# 
 # 缺失都集中到相同的56个样本上
 
 #2、极端值和无效值
